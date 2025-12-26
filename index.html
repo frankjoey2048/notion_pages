@@ -3,25 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文件导览</title>
+    <title>Notion Pages</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-primary: #faf9f7;
-            --bg-secondary: #f5f3f0;
-            --text-primary: #1a1a1a;
-            --text-secondary: #6b6b6b;
-            --text-tertiary: #999;
-            --accent: #c9a87c;
-            --accent-hover: #b8956a;
-            --border: #e8e6e3;
-            --card-bg: #ffffff;
-            --shadow: 0 2px 20px rgba(0,0,0,0.04);
-            --shadow-hover: 0 8px 40px rgba(0,0,0,0.08);
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -29,631 +15,278 @@
         }
 
         body {
-            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #fafafa;
+            color: #333;
             min-height: 100vh;
-            line-height: 1.6;
-        }
-
-        /* 装饰背景 */
-        .bg-decoration {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 0;
-        }
-
-        .bg-decoration::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -20%;
-            width: 800px;
-            height: 800px;
-            background: radial-gradient(circle, rgba(201, 168, 124, 0.08) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-
-        .bg-decoration::after {
-            content: '';
-            position: absolute;
-            bottom: -30%;
-            left: -10%;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(201, 168, 124, 0.05) 0%, transparent 70%);
-            border-radius: 50%;
+            padding: 40px 20px;
         }
 
         .container {
-            position: relative;
-            z-index: 1;
-            max-width: 1200px;
+            max-width: 600px;
             margin: 0 auto;
-            padding: 60px 40px;
         }
 
-        /* 头部 */
-        header {
-            text-align: center;
-            margin-bottom: 80px;
-            animation: fadeInDown 0.8s ease-out;
+        .search-box {
+            position: relative;
+            margin-bottom: 24px;
         }
 
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px 12px 42px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        .logo {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-            border-radius: 16px;
-            margin-bottom: 32px;
-            box-shadow: 0 4px 20px rgba(201, 168, 124, 0.3);
+        .search-box input:focus {
+            outline: none;
+            border-color: #999;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
 
-        .logo svg {
-            width: 32px;
-            height: 32px;
-            color: white;
+        .search-box input::placeholder {
+            color: #aaa;
         }
 
-        h1 {
-            font-family: 'Instrument Serif', Georgia, serif;
-            font-size: 3.5rem;
-            font-weight: 400;
-            letter-spacing: -0.02em;
-            margin-bottom: 16px;
-            color: var(--text-primary);
+        .search-box svg {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: #999;
         }
 
-        .subtitle {
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            font-weight: 300;
-        }
-
-        /* 路径导航 */
         .breadcrumb {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 48px;
-            font-size: 0.9rem;
-            animation: fadeIn 0.6s ease-out 0.2s both;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #666;
         }
 
         .breadcrumb a {
-            color: var(--text-secondary);
+            color: #666;
             text-decoration: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
         }
 
         .breadcrumb a:hover {
-            color: var(--accent);
-            background: var(--bg-secondary);
+            color: #333;
+            text-decoration: underline;
         }
 
         .breadcrumb span {
-            color: var(--text-tertiary);
+            margin: 0 6px;
+            color: #ccc;
         }
 
-        .breadcrumb .current {
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-
-        /* 统计信息 */
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: 48px;
-            margin-bottom: 48px;
-            padding: 24px;
-            background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            animation: fadeIn 0.6s ease-out 0.3s both;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-family: 'Instrument Serif', serif;
-            font-size: 2rem;
-            color: var(--accent);
-            line-height: 1;
-        }
-
-        .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-tertiary);
-            margin-top: 4px;
-        }
-
-        /* 文件网格 */
-        .file-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+        .file-list {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         .file-item {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 24px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow);
-            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
             text-decoration: none;
-            color: inherit;
-            display: block;
-            animation: fadeInUp 0.5s ease-out both;
+            color: #333;
+            transition: background 0.15s;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
         }
 
         .file-item:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-hover);
-            border-color: var(--border);
+            background: #f8f8f8;
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .file-item svg {
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+            flex-shrink: 0;
         }
 
-        .file-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 16px;
-            transition: transform 0.3s ease;
+        .file-item.folder svg {
+            color: #f59e0b;
         }
 
-        .file-item:hover .file-icon {
-            transform: scale(1.05);
-        }
-
-        .file-icon svg {
-            width: 24px;
-            height: 24px;
-        }
-
-        .file-icon.folder {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            color: #b45309;
-        }
-
-        .file-icon.file {
-            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-            color: #4338ca;
-        }
-
-        .file-icon.markdown {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-            color: #047857;
-        }
-
-        .file-icon.image {
-            background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
-            color: #be185d;
-        }
-
-        .file-icon.code {
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-            color: #b91c1c;
-        }
-
-        .file-icon.pdf {
-            background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
-            color: #c2410c;
+        .file-item.file svg {
+            color: #6b7280;
         }
 
         .file-name {
-            font-size: 1rem;
-            font-weight: 500;
-            margin-bottom: 6px;
-            word-break: break-word;
-            color: var(--text-primary);
+            flex: 1;
+            font-size: 14px;
         }
 
-        .file-meta {
-            font-size: 0.8rem;
-            color: var(--text-tertiary);
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .file-size {
+            font-size: 12px;
+            color: #999;
+            margin-left: 12px;
         }
 
-        .file-meta span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        /* 加载动画 */
-        .loading {
+        .loading, .empty, .error {
             text-align: center;
-            padding: 80px 20px;
+            padding: 48px 20px;
+            color: #999;
+            font-size: 14px;
         }
 
         .spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid var(--border);
-            border-top-color: var(--accent);
+            width: 24px;
+            height: 24px;
+            border: 2px solid #e0e0e0;
+            border-top-color: #666;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        .loading-text {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        /* 错误/空状态 */
-        .empty-state {
+        .no-results {
+            padding: 32px;
             text-align: center;
-            padding: 80px 20px;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .empty-icon {
-            width: 80px;
-            height: 80px;
-            background: var(--bg-secondary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-        }
-
-        .empty-icon svg {
-            width: 40px;
-            height: 40px;
-            color: var(--text-tertiary);
-        }
-
-        .empty-title {
-            font-size: 1.25rem;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .empty-desc {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        /* 配置提示 */
-        .config-notice {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border-radius: 12px;
-            padding: 20px 24px;
-            margin-bottom: 32px;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .config-notice h3 {
-            font-size: 1rem;
-            color: #92400e;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .config-notice p {
-            font-size: 0.9rem;
-            color: #a16207;
-            line-height: 1.6;
-        }
-
-        .config-notice code {
-            background: rgba(255,255,255,0.5);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'SF Mono', Monaco, monospace;
-            font-size: 0.85rem;
-        }
-
-        /* 页脚 */
-        footer {
-            text-align: center;
-            margin-top: 80px;
-            padding-top: 32px;
-            border-top: 1px solid var(--border);
-            color: var(--text-tertiary);
-            font-size: 0.85rem;
-        }
-
-        footer a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-
-        footer a:hover {
-            text-decoration: underline;
-        }
-
-        /* 响应式 */
-        @media (max-width: 768px) {
-            .container {
-                padding: 40px 20px;
-            }
-
-            h1 {
-                font-size: 2.5rem;
-            }
-
-            .stats {
-                gap: 24px;
-                padding: 20px;
-            }
-
-            .stat-value {
-                font-size: 1.5rem;
-            }
-
-            .file-grid {
-                grid-template-columns: 1fr;
-            }
+            color: #999;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <div class="bg-decoration"></div>
-    
     <div class="container">
-        <header>
-            <div class="logo">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" />
-                </svg>
-            </div>
-            <h1>文件导览</h1>
-            <p class="subtitle">浏览仓库中的所有文件与目录</p>
-        </header>
+        <div class="search-box">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" id="search" placeholder="搜索文件...">
+        </div>
 
         <nav class="breadcrumb" id="breadcrumb"></nav>
-
-        <div class="stats" id="stats" style="display: none;">
-            <div class="stat-item">
-                <div class="stat-value" id="folder-count">0</div>
-                <div class="stat-label">文件夹</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="file-count">0</div>
-                <div class="stat-label">文件</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="total-size">0</div>
-                <div class="stat-label">总大小</div>
-            </div>
-        </div>
 
         <main id="content">
             <div class="loading">
                 <div class="spinner"></div>
-                <p class="loading-text">正在加载文件列表...</p>
+                <p>加载中...</p>
             </div>
         </main>
-
-        <footer>
-            <p>由 <a href="https://pages.github.com" target="_blank">GitHub Pages</a> 驱动</p>
-        </footer>
     </div>
 
     <script>
-        // ========================================
-        // 配置区域 - 请修改以下信息
-        // ========================================
         const CONFIG = {
-            // 你的 GitHub 用户名
             owner: 'frankjoey2048',
-            // 你的仓库名称
             repo: 'notion_pages',
-            // 分支名称（通常是 main 或 master）
             branch: 'main',
-            // 要展示的目录路径（空字符串表示根目录）
             basePath: '',
-            // 页面标题
-            title: '文件导览',
-            // 页面副标题
-            subtitle: '浏览仓库中的所有文件与目录',
-            // 要隐藏的文件/文件夹（支持正则）
             hidePatterns: [
-                /^\./, // 隐藏以.开头的文件
+                /^\./, 
+                /^index\.html$/,
                 /^node_modules$/,
                 /^package-lock\.json$/,
-                /^yarn\.lock$/,
             ]
         };
-        // ========================================
 
-        // 文件类型图标映射
-        const FILE_ICONS = {
+        const ICONS = {
             folder: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
             </svg>`,
             file: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>`,
-            markdown: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>`,
-            image: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-            </svg>`,
-            code: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
-            </svg>`,
-            pdf: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
             </svg>`
         };
 
-        // 获取文件类型
-        function getFileType(name, isDir) {
-            if (isDir) return 'folder';
-            const ext = name.split('.').pop().toLowerCase();
-            const types = {
-                markdown: ['md', 'markdown', 'mdx'],
-                image: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico'],
-                code: ['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'css', 'scss', 'html', 'json', 'yaml', 'yml', 'xml', 'sh', 'bash', 'go', 'rs', 'vue', 'php'],
-                pdf: ['pdf']
-            };
-            for (const [type, exts] of Object.entries(types)) {
-                if (exts.includes(ext)) return type;
-            }
-            return 'file';
+        let allFiles = [];
+
+        function shouldHide(name) {
+            return CONFIG.hidePatterns.some(p => p.test(name));
         }
 
-        // 格式化文件大小
         function formatSize(bytes) {
-            if (bytes === 0) return '0 B';
+            if (!bytes) return '';
             const k = 1024;
             const sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
-        // 检查是否应该隐藏
-        function shouldHide(name) {
-            return CONFIG.hidePatterns.some(pattern => pattern.test(name));
-        }
-
-        // 获取当前路径
         function getCurrentPath() {
-            const hash = window.location.hash.slice(1);
-            return hash || CONFIG.basePath;
+            return window.location.hash.slice(1) || CONFIG.basePath;
         }
 
-        // 渲染面包屑
         function renderBreadcrumb(path) {
-            const breadcrumb = document.getElementById('breadcrumb');
-            const parts = path ? path.split('/').filter(Boolean) : [];
-            
-            let html = `<a href="#${CONFIG.basePath}">🏠 根目录</a>`;
-            
-            if (parts.length > 0) {
-                let currentPath = '';
-                parts.forEach((part, index) => {
-                    currentPath += (currentPath ? '/' : '') + part;
-                    html += `<span>/</span>`;
-                    if (index === parts.length - 1) {
-                        html += `<span class="current">${part}</span>`;
-                    } else {
-                        html += `<a href="#${currentPath}">${part}</a>`;
-                    }
-                });
-            }
-            
-            breadcrumb.innerHTML = html;
-        }
-
-        // 渲染文件列表
-        function renderFiles(files, path) {
-            const content = document.getElementById('content');
-            const stats = document.getElementById('stats');
-            
-            // 过滤隐藏文件
-            files = files.filter(f => !shouldHide(f.name));
-            
-            if (files.length === 0) {
-                stats.style.display = 'none';
-                content.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-                            </svg>
-                        </div>
-                        <h3 class="empty-title">此目录为空</h3>
-                        <p class="empty-desc">当前目录下没有文件或文件夹</p>
-                    </div>
-                `;
+            const el = document.getElementById('breadcrumb');
+            if (!path) {
+                el.innerHTML = '';
                 return;
             }
+            
+            const parts = path.split('/').filter(Boolean);
+            let html = `<a href="#">根目录</a>`;
+            let currentPath = '';
+            
+            parts.forEach((part, i) => {
+                currentPath += (currentPath ? '/' : '') + part;
+                html += `<span>/</span>`;
+                if (i === parts.length - 1) {
+                    html += part;
+                } else {
+                    html += `<a href="#${currentPath}">${part}</a>`;
+                }
+            });
+            
+            el.innerHTML = html;
+        }
 
-            // 排序：文件夹在前，文件在后，按名称排序
+        function renderFiles(files, query = '') {
+            const content = document.getElementById('content');
+            
+            // 过滤
+            files = files.filter(f => !shouldHide(f.name));
+            
+            // 搜索
+            if (query) {
+                const q = query.toLowerCase();
+                files = files.filter(f => f.name.toLowerCase().includes(q));
+            }
+
+            // 排序
             files.sort((a, b) => {
                 if (a.type === 'dir' && b.type !== 'dir') return -1;
                 if (a.type !== 'dir' && b.type === 'dir') return 1;
                 return a.name.localeCompare(b.name);
             });
 
-            // 统计信息
-            const folders = files.filter(f => f.type === 'dir').length;
-            const fileCount = files.length - folders;
-            const totalSize = files.reduce((sum, f) => sum + (f.size || 0), 0);
+            if (files.length === 0) {
+                content.innerHTML = `<div class="no-results">${query ? '没有找到匹配的文件' : '此目录为空'}</div>`;
+                return;
+            }
 
-            document.getElementById('folder-count').textContent = folders;
-            document.getElementById('file-count').textContent = fileCount;
-            document.getElementById('total-size').textContent = formatSize(totalSize);
-            stats.style.display = 'flex';
-
-            // 渲染文件网格
-            let html = '<div class="file-grid">';
+            let html = '<div class="file-list">';
             
-            files.forEach((file, index) => {
+            files.forEach(file => {
                 const isDir = file.type === 'dir';
-                const fileType = getFileType(file.name, isDir);
-                const icon = FILE_ICONS[fileType] || FILE_ICONS.file;
                 const href = isDir 
                     ? `#${file.path}` 
                     : `https://github.com/${CONFIG.owner}/${CONFIG.repo}/blob/${CONFIG.branch}/${file.path}`;
                 const target = isDir ? '' : 'target="_blank"';
+                const icon = isDir ? ICONS.folder : ICONS.file;
+                const size = isDir ? '' : formatSize(file.size);
                 
                 html += `
-                    <a class="file-item" href="${href}" ${target} style="animation-delay: ${index * 0.05}s">
-                        <div class="file-icon ${fileType}">${icon}</div>
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-meta">
-                            <span>${isDir ? '文件夹' : formatSize(file.size)}</span>
-                        </div>
+                    <a class="file-item ${isDir ? 'folder' : 'file'}" href="${href}" ${target}>
+                        ${icon}
+                        <span class="file-name">${file.name}</span>
+                        ${size ? `<span class="file-size">${size}</span>` : ''}
                     </a>
                 `;
             });
@@ -662,113 +295,41 @@
             content.innerHTML = html;
         }
 
-        // 显示配置提示
-        function showConfigNotice() {
-            const content = document.getElementById('content');
-            content.innerHTML = `
-                <div class="config-notice">
-                    <h3>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        配置说明
-                    </h3>
-                    <p>请编辑此文件顶部的 <code>CONFIG</code> 对象，设置你的 GitHub 用户名和仓库名：</p>
-                    <p style="margin-top: 12px;">
-                        <code>owner: 'your-username'</code><br>
-                        <code>repo: 'your-repo'</code>
-                    </p>
-                </div>
-            `;
-        }
-
-        // 显示错误
-        function showError(message) {
-            const content = document.getElementById('content');
-            const stats = document.getElementById('stats');
-            stats.style.display = 'none';
-            
-            content.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                        </svg>
-                    </div>
-                    <h3 class="empty-title">加载失败</h3>
-                    <p class="empty-desc">${message}</p>
-                </div>
-            `;
-        }
-
-        // 加载目录内容
         async function loadDirectory(path) {
             const content = document.getElementById('content');
+            content.innerHTML = '<div class="loading"><div class="spinner"></div><p>加载中...</p></div>';
             
-            // 显示加载状态
-            content.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p class="loading-text">正在加载文件列表...</p>
-                </div>
-            `;
-
-            // 更新面包屑
             renderBreadcrumb(path);
-
-            // 检查配置
-            if (CONFIG.owner === 'your-username' || CONFIG.repo === 'your-repo') {
-                showConfigNotice();
-                return;
-            }
+            document.getElementById('search').value = '';
 
             try {
                 const apiPath = path ? `/${path}` : '';
                 const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents${apiPath}?ref=${CONFIG.branch}`;
                 
-                const response = await fetch(url);
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(res.status === 404 ? '路径不存在' : '加载失败');
                 
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error('仓库或路径不存在，请检查配置');
-                    }
-                    throw new Error(`API 请求失败 (${response.status})`);
-                }
+                const data = await res.json();
+                if (!Array.isArray(data)) throw new Error('数据格式错误');
                 
-                const data = await response.json();
+                allFiles = data;
+                renderFiles(allFiles);
                 
-                if (!Array.isArray(data)) {
-                    throw new Error('返回数据格式错误');
-                }
-                
-                renderFiles(data, path);
-                
-            } catch (error) {
-                console.error('加载失败:', error);
-                showError(error.message);
+            } catch (err) {
+                content.innerHTML = `<div class="error">${err.message}</div>`;
             }
         }
 
-        // 更新页面标题
-        function updatePageInfo() {
-            document.querySelector('h1').textContent = CONFIG.title;
-            document.querySelector('.subtitle').textContent = CONFIG.subtitle;
-            document.title = CONFIG.title;
-        }
+        // 搜索
+        document.getElementById('search').addEventListener('input', (e) => {
+            renderFiles(allFiles, e.target.value);
+        });
+
+        // hash 变化
+        window.addEventListener('hashchange', () => loadDirectory(getCurrentPath()));
 
         // 初始化
-        function init() {
-            updatePageInfo();
-            loadDirectory(getCurrentPath());
-            
-            // 监听 hash 变化
-            window.addEventListener('hashchange', () => {
-                loadDirectory(getCurrentPath());
-            });
-        }
-
-        // 启动
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', () => loadDirectory(getCurrentPath()));
     </script>
 </body>
 </html>
