@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qwen3-30B-A3B-Thinking-2507 Architecture</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      min-height: 100vh;
+      color: #e2e8f0;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .header h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    
+    .header p {
+      color: #94a3b8;
+      font-size: 1.1rem;
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    
+    .stat-card {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 40px rgba(96, 165, 250, 0.2);
+    }
+    
+    .stat-label {
+      color: #94a3b8;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #60a5fa;
+    }
+    
+    .stat-sub {
+      color: #64748b;
+      font-size: 0.75rem;
+    }
+    
+    /* Architecture Diagram */
+    .architecture {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid #334155;
+      border-radius: 24px;
+      padding: 30px;
+      margin-bottom: 40px;
+    }
+    
+    .arch-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .arrow {
+      width: 2px;
+      height: 20px;
+      background: #475569;
+      position: relative;
+    }
+    
+    .arrow::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: -4px;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 8px solid #475569;
+    }
+    
+    /* Blocks */
+    .block {
+      border-radius: 12px;
+      padding: 16px 32px;
+      text-align: center;
+      width: 100%;
+      max-width: 500px;
+    }
+    
+    .block-input {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    }
+    
+    .block-embed {
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    }
+    
+    .block-output {
+      background: linear-gradient(135deg, #ec4899, #be185d);
+    }
+    
+    .block h3 {
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+    
+    .block p {
+      font-size: 0.8rem;
+      opacity: 0.85;
+    }
+    
+    /* Transformer Block */
+    .transformer-block {
+      border: 2px dashed #475569;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 700px;
+      background: rgba(15, 23, 42, 0.5);
+    }
+    
+    .transformer-title {
+      text-align: center;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-bottom: 20px;
+      font-size: 1.1rem;
+    }
+    
+    .transformer-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .layer-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .norm-block {
+      background: #334155;
+      border-radius: 8px;
+      padding: 10px 20px;
+      flex: 1;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    
+    .attention-block {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 12px;
+      padding: 20px;
+      flex: 3;
+    }
+    
+    .attention-block h4 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+    
+    .attention-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    
+    .detail-tag {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+    }
+    
+    .residual {
+      width: 40px;
+      height: 40px;
+      background: #475569;
+      border: 2px solid #64748b;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    
+    /* MoE Block */
+    .moe-block {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border-radius: 12px;
+      padding: 20px;
+      flex: 3;
+    }
+    
+    .moe-block h4 {
+      font-size: 1rem;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    
+    .moe-content {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .router {
+      background: rgba(120, 53, 15, 0.8);
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-align: center;
+    }
+    
+    .router-title {
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    
+    .router-sub {
+      font-size: 0.7rem;
+      opacity: 0.8;
+    }
+    
+    .experts-grid {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    
+    .expert {
+      width: 40px;
+      height: 50px;
+      background: #059669;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+    }
+    
+    .expert-id {
+      font-weight: 700;
+    }
+    
+    .expert-dim {
+      opacity: 0.8;
+      font-size: 0.6rem;
+    }
+    
+    .expert-more {
+      background: #78350f;
+      color: #fef3c7;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+    
+    /* Side Info */
+    .side-info {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .info-box {
+      border-radius: 12px;
+      padding: 16px 20px;
+      min-width: 180px;
+      text-align: center;
+    }
+    
+    .info-thinking {
+      background: rgba(124, 58, 237, 0.2);
+      border: 1px solid #8b5cf6;
+    }
+    
+    .info-context {
+      background: rgba(8, 145, 178, 0.2);
+      border: 1px solid #06b6d4;
+    }
+    
+    .info-box h5 {
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+    
+    .info-box p {
+      font-size: 0.8rem;
+      opacity: 0.85;
+      line-height: 1.5;
+    }
+    
+    /* Details Grid */
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .detail-card {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    
+    .detail-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .detail-card h3.blue { color: #60a5fa; }
+    .detail-card h3.green { color: #34d399; }
+    .detail-card h3.orange { color: #fbbf24; }
+    .detail-card h3.purple { color: #a78bfa; }
+    
+    .detail-table {
+      width: 100%;
+    }
+    
+    .detail-table tr {
+      border-bottom: 1px solid #334155;
+    }
+    
+    .detail-table tr:last-child {
+      border-bottom: none;
+    }
+    
+    .detail-table td {
+      padding: 10px 0;
+    }
+    
+    .detail-table td:first-child {
+      color: #94a3b8;
+    }
+    
+    .detail-table td:last-child {
+      text-align: right;
+      font-family: 'SF Mono', Monaco, monospace;
+      color: #fff;
+    }
+    
+    /* Data Flow */
+    .data-flow {
+      background: linear-gradient(90deg, rgba(30, 41, 59, 0.8), rgba(30, 41, 59, 0.4));
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .data-flow h3 {
+      color: #22d3ee;
+      margin-bottom: 16px;
+    }
+    
+    .flow-items {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .flow-item {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+    }
+    
+    .flow-blue { background: rgba(59, 130, 246, 0.3); color: #93c5fd; }
+    .flow-purple { background: rgba(139, 92, 246, 0.3); color: #c4b5fd; }
+    .flow-green { background: rgba(16, 185, 129, 0.3); color: #6ee7b7; }
+    .flow-pink { background: rgba(236, 72, 153, 0.3); color: #f9a8d4; }
+    .flow-cyan { background: rgba(6, 182, 212, 0.3); color: #67e8f9; }
+    
+    .flow-arrow {
+      color: #64748b;
+      font-size: 1.2rem;
+    }
+    
+    /* Footer */
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 0.85rem;
+      padding-top: 20px;
+      border-top: 1px solid #334155;
+    }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+      .header h1 {
+        font-size: 1.5rem;
+      }
+      
+      .layer-row {
+        flex-direction: column;
+      }
+      
+      .transformer-block {
+        padding: 16px;
+      }
+      
+      .moe-content {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>Qwen3-30B-A3B-Thinking-2507</h1>
+      <p>Mixture-of-Experts (MoE) Transformer Architecture</p>
+    </div>
+    
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Parameters</div>
+        <div class="stat-value">30.5B</div>
+        <div class="stat-sub">305 Billion</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Parameters</div>
+        <div class="stat-value">3.3B</div>
+        <div class="stat-sub">Per Token</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Context Length</div>
+        <div class="stat-value">262K</div>
+        <div class="stat-sub">Extendable to 1M</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Transformer Layers</div>
+        <div class="stat-value">48</div>
+        <div class="stat-sub">Decoder Layers</div>
+      </div>
+    </div>
+    
+    <!-- Architecture Diagram -->
+    <div class="architecture">
+      <div class="arch-flow">
+        <!-- Input -->
+        <div class="block block-input">
+          <h3>Input Tokens</h3>
+          <p>vocab_size: 151,936</p>
+        </div>
+        
+        <div class="arrow"></div>
+        
+        <!-- Embedding -->
+        <div class="block block-embed">
+          <h3>Token Embedding + RoPE</h3>
+          <p>hidden_size: 2048 | rope_base: 10,000,000</p>
+        </div>
+        
+        <div class="arrow"></div>
+        
+        <!-- Transformer Block -->
+        <div class="transformer-block">
+          <div class="transformer-title">× 48 Transformer Decoder Layers</div>
+          <div class="transformer-inner">
+            <!-- Attention Layer -->
+            <div class="layer-row">
+              <div class="norm-block">RMSNorm</div>
+              <div class="attention-block">
+                <h4>Grouped Query Attention (GQA)</h4>
+                <div class="attention-details">
+                  <span class="detail-tag">32 Query Heads</span>
+                  <span class="detail-tag">4 KV Heads</span>
+                  <span class="detail-tag">head_dim: 128</span>
+                  <span class="detail-tag">QK LayerNorm ✓</span>
+                  <span class="detail-tag">DCA (Long Context)</span>
+                </div>
+              </div>
+              <div class="residual">+</div>
+            </div>
+            
+            <!-- MoE FFN Layer -->
+            <div class="layer-row">
+              <div class="norm-block">RMSNorm</div>
+              <div class="moe-block">
+                <h4>Mixture of Experts (MoE) FFN</h4>
+                <div class="moe-content">
+                  <div class="router">
+                    <div class="router-title">Router</div>
+                    <div class="router-sub">Top-8 Gating</div>
+                  </div>
+                  <div class="experts-grid">
+                    <div class="expert"><span class="expert-id">E1</span><span class="expert-dim">768</span></div>
+                    <div class="expert"><span class="expert-id">E2</span><span class="expert-dim">768</span></div>
+                    <div class="expert"><span class="expert-id">E3</span><span class="expert-dim">768</span></div>
+                    <div class="expert"><span class="expert-id">E4</span><span class="expert-dim">768</span></div>
+                    <div class="expert"><span class="expert-id">E5</span><span class="expert-dim">768</span></div>
+                    <div class="expert"><span class="expert-id">E6</span><span class="expert-dim">768</span></div>
+                    <div class="expert"><span class="expert-id">E7</span><span class="expert-dim">768</span></div>
+                    <div class="expert"><span class="expert-id">E8</span><span class="expert-dim">768</span></div>
+                  </div>
+                  <div class="expert-more">
+                    <div>... 128 Experts</div>
+                    <div>8 Active / Token</div>
+                  </div>
+                </div>
+              </div>
+              <div class="residual">+</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="arrow"></div>
+        
+        <!-- Final Norm -->
+        <div class="norm-block" style="max-width: 400px;">Final RMSNorm</div>
+        
+        <div class="arrow"></div>
+        
+        <!-- Output -->
+        <div class="block block-output">
+          <h3>LM Head (Linear Layer)</h3>
+          <p>Output → 151,936 logits</p>
+        </div>
+      </div>
+      
+      <!-- Side Info Boxes -->
+      <div class="side-info">
+        <div class="info-box info-thinking">
+          <h5>🧠 Thinking Mode</h5>
+          <p>&lt;think&gt;...&lt;/think&gt;<br>Deep Reasoning Chain<br>max_tokens: 81,920</p>
+        </div>
+        <div class="info-box info-context">
+          <h5>📏 Long Context</h5>
+          <p>Native: 262K tokens<br>Extended: 1M tokens<br>(DCA + YaRN)</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Details Grid -->
+    <div class="details-grid">
+      <div class="detail-card">
+        <h3 class="blue">🏗️ Model Architecture</h3>
+        <table class="detail-table">
+          <tr><td>Architecture Type</td><td>Transformer Decoder + MoE</td></tr>
+          <tr><td>Total Parameters</td><td>30.5B</td></tr>
+          <tr><td>Active Parameters</td><td>3.3B</td></tr>
+          <tr><td>Transformer Layers</td><td>48</td></tr>
+          <tr><td>Hidden Dimension</td><td>2,048</td></tr>
+          <tr><td>Vocabulary Size</td><td>151,936</td></tr>
+        </table>
+      </div>
+      
+      <div class="detail-card">
+        <h3 class="green">👁️ Attention Mechanism</h3>
+        <table class="detail-table">
+          <tr><td>Type</td><td>Grouped Query Attention</td></tr>
+          <tr><td>Query Heads</td><td>32</td></tr>
+          <tr><td>KV Heads</td><td>4</td></tr>
+          <tr><td>Head Dimension</td><td>128</td></tr>
+          <tr><td>Position Encoding</td><td>RoPE (base=10M)</td></tr>
+          <tr><td>QK LayerNorm</td><td>✓ Enabled</td></tr>
+        </table>
+      </div>
+      
+      <div class="detail-card">
+        <h3 class="orange">🎯 MoE Configuration</h3>
+        <table class="detail-table">
+          <tr><td>Total Experts</td><td>128</td></tr>
+          <tr><td>Active Experts / Token</td><td>8</td></tr>
+          <tr><td>Expert Intermediate Dim</td><td>768</td></tr>
+          <tr><td>Routing Strategy</td><td>Top-K Gating</td></tr>
+          <tr><td>Load Balancing</td><td>Global-batch Loss</td></tr>
+          <tr><td>Expert Type</td><td>SwiGLU FFN</td></tr>
+        </table>
+      </div>
+      
+      <div class="detail-card">
+        <h3 class="purple">🧠 Thinking Features</h3>
+        <table class="detail-table">
+          <tr><td>Mode</td><td>Thinking Only</td></tr>
+          <tr><td>Thinking Tags</td><td>&lt;think&gt;...&lt;/think&gt;</td></tr>
+          <tr><td>Native Context</td><td>262,144 tokens</td></tr>
+          <tr><td>Extended Context</td><td>1,000,000 tokens</td></tr>
+          <tr><td>Long Context Tech</td><td>DCA + YaRN</td></tr>
+          <tr><td>Max Reasoning Length</td><td>81,920 tokens</td></tr>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Data Flow -->
+    <div class="data-flow">
+      <h3>📊 Data Flow</h3>
+      <div class="flow-items">
+        <span class="flow-item flow-blue">Input Tokens</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-item flow-purple">Embedding + RoPE</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-item flow-green">48× [GQA + MoE FFN]</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-item flow-pink">LM Head</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-item flow-cyan">Output Logits</span>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+      Alibaba Qwen Team | Released: 2025.07.30 | License: Apache 2.0
+    </div>
+  </div>
+  
+  <script>
+    // Add hover animation to stat cards
+    document.querySelectorAll('.stat-card').forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.style.borderColor = '#60a5fa';
+      });
+      card.addEventListener('mouseleave', function() {
+        this.style.borderColor = '#334155';
+      });
+    });
+    
+    // Add click to copy for detail values
+    document.querySelectorAll('.detail-table td:last-child').forEach(cell => {
+      cell.style.cursor = 'pointer';
+      cell.title = 'Click to copy';
+      cell.addEventListener('click', function() {
+        navigator.clipboard.writeText(this.textContent);
+        const original = this.textContent;
+        this.textContent = '✓ Copied!';
+        setTimeout(() => {
+          this.textContent = original;
+        }, 1000);
+      });
+    });
+    
+    // Animate experts on hover
+    document.querySelectorAll('.expert').forEach((expert, index) => {
+      expert.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.1)';
+        this.style.background = '#10b981';
+      });
+      expert.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+        this.style.background = '#059669';
+      });
+    });
+  </script>
+</body>
+</html>
