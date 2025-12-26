@@ -328,14 +328,6 @@
             return CONFIG.hidePatterns.some(p => p.test(name));
         }
 
-        function formatSize(bytes) {
-            if (!bytes) return '';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
-
         function getFileType(name) {
             const ext = name.split('.').pop().toLowerCase();
             const types = {
@@ -486,7 +478,6 @@
                 const href = isDir ? `#${file.path}` : getPageUrl(file.path);
                 const target = isDir ? '' : 'target="_blank"';
                 const fileType = isDir ? 'Folder' : getFileType(file.name);
-                const size = isDir ? '' : formatSize(file.size);
                 const pageUrl = getPageUrl(file.path);
 
                 let previewContent = '';
@@ -511,7 +502,6 @@
                             <div class="card-title" title="${file.name}">${displayName}</div>
                             <div class="card-meta">
                                 <span class="card-type">${fileType}</span>
-                                ${size ? `<span>${size}</span>` : ''}
                             </div>
                         </div>
                     </a>
