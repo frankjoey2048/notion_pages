@@ -368,12 +368,43 @@
 
         function highlightText(text, query) {
             if (!query) return text;
+            // 获取所有搜索词，按长度降序排列（先匹配长的）
             const words = query.toLowerCase().split(/[\s_\-\.]+/).filter(Boolean);
-            let result = text;
-            words.forEach(word => {
-                const regex = new RegExp(`(${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                result = result.replace(regex, '<mark>$1</mark>');
+            const sortedWords = [...new Set(words)].sort((a, b) => b.length - a.length);
+            
+            // 找出所有需要高亮的位置
+            const textLower = text.toLowerCase();
+            const ranges = [];
+            
+            sortedWords.forEach(word => {
+                let pos = 0;
+                while ((pos = textLower.indexOf(word, pos)) !== -1) {
+                    // 检查是否与已有范围重叠
+                    const overlaps = ranges.some(r => 
+                        (pos >= r.start && pos < r.end) || 
+                        (pos + word.length > r.start && pos + word.length <= r.end) ||
+                        (pos <= r.start && pos + word.length >= r.end)
+                    );
+                    if (!overlaps) {
+                        ranges.push({ start: pos, end: pos + word.length });
+                    }
+                    pos += 1;
+                }
             });
+            
+            // 按位置排序
+            ranges.sort((a, b) => a.start - b.start);
+            
+            // 构建结果
+            let result = '';
+            let lastEnd = 0;
+            ranges.forEach(r => {
+                result += text.slice(lastEnd, r.start);
+                result += '<mark>' + text.slice(r.start, r.end) + '</mark>';
+                lastEnd = r.end;
+            });
+            result += text.slice(lastEnd);
+            
             return result;
         }
 
