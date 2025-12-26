@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLaDA 2.0 - Scaling Up Diffusion Language Models to 100B</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #12121a;
+      --bg-card-hover: #1a1a28;
+      --border: #2a2a3e;
+      --text-primary: #e8e8f0;
+      --text-secondary: #8888a0;
+      --accent-blue: #00d4ff;
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-orange: #f97316;
+      --accent-green: #10b981;
+      --accent-yellow: #fbbf24;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .bg-animation::before {
+      content: '';
+      position: absolute;
+      width: 150%;
+      height: 150%;
+      top: -25%;
+      left: -25%;
+      background: 
+        radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.08) 0%, transparent 50%);
+      animation: bgFloat 20s ease-in-out infinite;
+    }
+
+    @keyframes bgFloat {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      33% { transform: translate(30px, -30px) rotate(1deg); }
+      66% { transform: translate(-20px, 20px) rotate(-1deg); }
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      padding: 80px 20px 60px;
+      position: relative;
+    }
+
+    .logo {
+      font-size: 72px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -3px;
+      margin-bottom: 16px;
+      animation: logoGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes logoGlow {
+      0%, 100% { filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.3)); }
+      50% { filter: drop-shadow(0 0 40px rgba(0, 212, 255, 0.5)); }
+    }
+
+    .tagline {
+      font-size: 24px;
+      color: var(--text-secondary);
+      font-weight: 400;
+      margin-bottom: 30px;
+    }
+
+    .badges {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 8px 20px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-blue { background: rgba(0, 212, 255, 0.15); color: var(--accent-blue); border: 1px solid rgba(0, 212, 255, 0.3); }
+    .badge-purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); border: 1px solid rgba(139, 92, 246, 0.3); }
+    .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    /* Main container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Section styles */
+    section {
+      margin-bottom: 80px;
+    }
+
+    .section-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 32px;
+      background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 2px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(139, 92, 246, 0.3);
+      transform: translateY(-4px);
+    }
+
+    /* Grid layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    /* Comparison section */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comparison-table th {
+      background: rgba(139, 92, 246, 0.1);
+      font-weight: 600;
+      color: var(--accent-purple);
+    }
+
+    .comparison-table tr:hover td {
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    /* Architecture diagram */
+    .architecture-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      overflow-x: auto;
+    }
+
+    .architecture-svg {
+      width: 100%;
+      min-width: 1000px;
+      height: auto;
+    }
+
+    /* Training phases */
+    .phase-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .phase-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+    }
+
+    .phase-warmup::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple)); }
+    .phase-stable::before { background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink)); }
+    .phase-decay::before { background: linear-gradient(90deg, var(--accent-orange), var(--accent-yellow)); }
+
+    .phase-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    .phase-warmup .phase-icon { background: rgba(0, 212, 255, 0.15); }
+    .phase-stable .phase-icon { background: rgba(139, 92, 246, 0.15); }
+    .phase-decay .phase-icon { background: rgba(249, 115, 22, 0.15); }
+
+    .phase-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .phase-desc {
+      color: var(--text-secondary);
+      font-size: 15px;
+      margin-bottom: 16px;
+    }
+
+    .phase-detail {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--accent-green);
+    }
+
+    /* Diffusion animation */
+    .diffusion-demo {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .diffusion-steps {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 30px 0;
+    }
+
+    .diffusion-step {
+      background: rgba(0, 0, 0, 0.4);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      min-width: 180px;
+      transition: all 0.3s ease;
+    }
+
+    .diffusion-step.active {
+      border-color: var(--accent-green);
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .diffusion-step .tokens {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .diffusion-step .tokens .mask {
+      color: var(--accent-purple);
+      background: rgba(139, 92, 246, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .diffusion-step .tokens .revealed {
+      color: var(--accent-green);
+    }
+
+    .diffusion-step .step-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .arrow-icon {
+      color: var(--accent-blue);
+      font-size: 24px;
+    }
+
+    /* Model specs */
+    .spec-card {
+      text-align: center;
+    }
+
+    .spec-value {
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .spec-label {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Feature list */
+    .feature-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feature-item:last-child {
+      border-bottom: none;
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .feature-content h4 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .feature-content p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Benchmark results */
+    .benchmark-bar {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      height: 32px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .benchmark-fill {
+      height: 100%;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: width 1s ease;
+    }
+
+    .benchmark-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    /* Code block */
+    .code-block {
+      background: #0d0d12;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      line-height: 1.8;
+    }
+
+    .code-block .comment { color: #6a7a8a; }
+    .code-block .keyword { color: var(--accent-purple); }
+    .code-block .string { color: var(--accent-green); }
+    .code-block .function { color: var(--accent-blue); }
+    .code-block .number { color: var(--accent-orange); }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 60px 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    footer a {
+      color: var(--accent-blue);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .logo { font-size: 48px; }
+      .tagline { font-size: 18px; }
+      .section-title { font-size: 24px; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .diffusion-steps { flex-direction: column; }
+      .arrow-icon { transform: rotate(90deg); }
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-in {
+      animation: fadeInUp 0.6s ease forwards;
+    }
+
+    /* Interactive elements */
+    .interactive-btn {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border: none;
+      color: white;
+      padding: 12px 28px;
+      border-radius: 30px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .interactive-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4);
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: relative;
+      cursor: help;
+      border-bottom: 1px dashed var(--text-secondary);
+    }
+
+    .tooltip:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 100;
+    }
+
+    /* Tab navigation */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .tab-btn:hover {
+      background: rgba(139, 92, 246, 0.1);
+      color: var(--text-primary);
+    }
+
+    .tab-btn.active {
+      background: rgba(139, 92, 246, 0.2);
+      color: var(--accent-purple);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeInUp 0.4s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animation"></div>
+
+  <!-- Header -->
+  <header>
+    <h1 class="logo">LLaDA 2.0</h1>
+    <p class="tagline">Scaling Up Diffusion Language Models to 100B</p>
+    <div class="badges">
+      <span class="badge badge-blue">🚀 100B Parameters</span>
+      <span class="badge badge-purple">⚡ 2.1x Faster Inference</span>
+      <span class="badge badge-green">🔓 Fully Open Source</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Overview Section -->
+    <section id="overview">
+      <h2 class="section-title">概述</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="font-size: 20px; margin-bottom: 16px; color: var(--accent-blue);">什么是 LLaDA 2.0？</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            LLaDA 2.0 是由蚂蚁集团 InclusionAI 团队开发的离散扩散大语言模型（dLLM）系列。它首次将扩散语言模型的规模扩展到 <strong style="color: var(--accent-purple);">1000亿参数</strong>，打破了扩散模型在语言领域的规模瓶颈。
+          </p>
+          <p style="color: var(--text-secondary);">
+            与传统的自回归（AR）模型不同，LLaDA 2.0 采用扩散过程生成文本：通过逐步去噪来重建被掩码的序列，而非逐个token预测。这种方法实现了<strong style="color: var(--accent-green);">并行解码</strong>，显著提升了生成速度。
+          </p>
+        </div>
+        <div class="card">
+          <h3 style="font-size: 20px; margin-bottom: 16px; color: var(--accent-purple);">核心创新</h3>
+          <div class="feature-item" style="padding-top: 0;">
+            <div class="feature-icon" style="background: rgba(0, 212, 255, 0.15);">🔄</div>
+            <div class="feature-content">
+              <h4>AR→dLLM 转换</h4>
+              <p>从预训练AR模型平滑转换，继承已有知识，避免从头训练的高昂成本</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon" style="background: rgba(139, 92, 246, 0.15);">📊</div>
+            <div class="feature-content">
+              <h4>三阶段 WSD 训练</h4>
+              <p>Warmup-Stable-Decay 策略确保从因果生成到双向去噪的平稳过渡</p>
+            </div>
+          </div>
+          <div class="feature-item" style="border-bottom: none;">
+            <div class="feature-icon" style="background: rgba(16, 185, 129, 0.15);">⚡</div>
+            <div class="feature-content">
+              <h4>MoE 高效架构</h4>
+              <p>100B总参数仅激活6.1B，大幅降低推理成本</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Metrics -->
+    <section id="metrics">
+      <h2 class="section-title">关键指标</h2>
+      <div class="grid-4">
+        <div class="card spec-card">
+          <div class="spec-value">100B</div>
+          <div class="spec-label">总参数量</div>
+        </div>
+        <div class="card spec-card">
+          <div class="spec-value">6.1B</div>
+          <div class="spec-label">激活参数量</div>
+        </div>
+        <div class="card spec-card">
+          <div class="spec-value">535</div>
+          <div class="spec-label">tokens/s 推理速度</div>
+        </div>
+        <div class="card spec-card">
+          <div class="spec-value">2.1x</div>
+          <div class="spec-label">推理加速比</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AR vs Diffusion Comparison -->
+    <section id="comparison">
+      <h2 class="section-title">自回归 vs 扩散模型</h2>
+      <div class="card">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>特性</th>
+              <th>自回归模型 (AR)</th>
+              <th>扩散模型 (LLaDA 2.0)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>生成方式</strong></td>
+              <td>逐token顺序生成（从左到右）</td>
+              <td>并行去噪，同时预测所有被掩码token</td>
+            </tr>
+            <tr>
+              <td><strong>注意力机制</strong></td>
+              <td>因果注意力（Causal Attention）</td>
+              <td>双向注意力（Bidirectional Attention）</td>
+            </tr>
+            <tr>
+              <td><strong>生成速度</strong></td>
+              <td>受限于序列长度，线性增长</td>
+              <td>并行解码，速度更快（535 tokens/s）</td>
+            </tr>
+            <tr>
+              <td><strong>反向诅咒</strong></td>
+              <td>存在（如 A是B的父亲 → B是A的?）</td>
+              <td>自然解决（双向建模）</td>
+            </tr>
+            <tr>
+              <td><strong>填空任务</strong></td>
+              <td>需要特殊处理</td>
+              <td>原生支持（Infilling）</td>
+            </tr>
+            <tr>
+              <td><strong>代表模型</strong></td>
+              <td>GPT, LLaMA, Qwen</td>
+              <td>LLaDA 2.0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Architecture Diagram -->
+    <section id="architecture">
+      <h2 class="section-title">模型架构</h2>
+      <div class="architecture-container">
+        <svg class="architecture-svg" viewBox="0 0 1200 800">
+          <defs>
+            <linearGradient id="grad-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00d4ff" />
+              <stop offset="100%" stop-color="#0099cc" />
+            </linearGradient>
+            <linearGradient id="grad-purple" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#8b5cf6" />
+              <stop offset="100%" stop-color="#a78bfa" />
+            </linearGradient>
+            <linearGradient id="grad-pink" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ec4899" />
+              <stop offset="100%" stop-color="#f472b6" />
+            </linearGradient>
+            <linearGradient id="grad-orange" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f97316" />
+              <stop offset="100%" stop-color="#fb923c" />
+            </linearGradient>
+            <linearGradient id="grad-green" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#10b981" />
+              <stop offset="100%" stop-color="#34d399" />
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#00d4ff" />
+            </marker>
+          </defs>
+
+          <!-- Background -->
+          <rect x="0" y="0" width="1200" height="800" fill="#0a0a0f" rx="20"/>
+          
+          <!-- Title -->
+          <text x="600" y="45" text-anchor="middle" fill="#e8e8f0" font-size="24" font-weight="bold">LLaDA 2.0 完整架构图</text>
+
+          <!-- Input Section -->
+          <g transform="translate(50, 80)">
+            <rect x="0" y="0" width="250" height="120" rx="12" fill="#12121a" stroke="url(#grad-green)" stroke-width="2"/>
+            <text x="125" y="30" text-anchor="middle" fill="#10b981" font-size="16" font-weight="bold">输入层</text>
+            <rect x="20" y="45" width="210" height="30" rx="6" fill="rgba(16, 185, 129, 0.2)"/>
+            <text x="125" y="66" text-anchor="middle" fill="#e8e8f0" font-size="13">Token Embedding</text>
+            <rect x="20" y="82" width="210" height="30" rx="6" fill="rgba(16, 185, 129, 0.2)"/>
+            <text x="125" y="103" text-anchor="middle" fill="#e8e8f0" font-size="13">RoPE Position Encoding</text>
+          </g>
+
+          <!-- Main Transformer Block -->
+          <g transform="translate(350, 80)">
+            <rect x="0" y="0" width="500" height="320" rx="16" fill="#12121a" stroke="url(#grad-purple)" stroke-width="2"/>
+            <text x="250" y="35" text-anchor="middle" fill="#8b5cf6" font-size="18" font-weight="bold">MoE Transformer Block × N</text>
+            
+            <!-- Bi-directional Attention -->
+            <g transform="translate(25, 55)">
+              <rect x="0" y="0" width="200" height="100" rx="10" fill="rgba(0, 212, 255, 0.15)" stroke="url(#grad-blue)" stroke-width="1.5"/>
+              <text x="100" y="30" text-anchor="middle" fill="#00d4ff" font-size="14" font-weight="bold">Bi-directional</text>
+              <text x="100" y="50" text-anchor="middle" fill="#00d4ff" font-size="14" font-weight="bold">Self-Attention</text>
+              <text x="100" y="75" text-anchor="middle" fill="#8888a0" font-size="11">全局双向注意力</text>
+              <text x="100" y="90" text-anchor="middle" fill="#8888a0" font-size="11">非因果掩码</text>
+            </g>
+
+            <!-- MoE FFN -->
+            <g transform="translate(250, 55)">
+              <rect x="0" y="0" width="220" height="100" rx="10" fill="rgba(236, 72, 153, 0.15)" stroke="url(#grad-pink)" stroke-width="1.5"/>
+              <text x="110" y="25" text-anchor="middle" fill="#ec4899" font-size="14" font-weight="bold">MoE Feed-Forward</text>
+              <text x="110" y="50" text-anchor="middle" fill="#e8e8f0" font-size="12">Total: 100B / Active: 6.1B</text>
+              <text x="110" y="70" text-anchor="middle" fill="#8888a0" font-size="11">Top-K 专家路由</text>
+              <text x="110" y="85" text-anchor="middle" fill="#8888a0" font-size="11">SwiGLU 激活函数</text>
+            </g>
+
+            <!-- RMSNorm -->
+            <g transform="translate(25, 170)">
+              <rect x="0" y="0" width="200" height="60" rx="8" fill="rgba(251, 191, 36, 0.15)" stroke="#fbbf24" stroke-width="1.5"/>
+              <text x="100" y="25" text-anchor="middle" fill="#fbbf24" font-size="14" font-weight="bold">RMSNorm</text>
+              <text x="100" y="45" text-anchor="middle" fill="#8888a0" font-size="11">Pre-Norm 结构</text>
+            </g>
+
+            <!-- Residual -->
+            <g transform="translate(250, 170)">
+              <rect x="0" y="0" width="220" height="60" rx="8" fill="rgba(16, 185, 129, 0.15)" stroke="url(#grad-green)" stroke-width="1.5"/>
+              <text x="110" y="25" text-anchor="middle" fill="#10b981" font-size="14" font-weight="bold">Residual Connection</text>
+              <text x="110" y="45" text-anchor="middle" fill="#8888a0" font-size="11">残差连接</text>
+            </g>
+
+            <!-- Architecture specs -->
+            <g transform="translate(25, 250)">
+              <rect x="0" y="0" width="445" height="55" rx="8" fill="rgba(0, 0, 0, 0.4)"/>
+              <text x="222" y="22" text-anchor="middle" fill="#8888a0" font-size="12">架构参数 (flash版本): 64层 | 48个注意力头 | 8192隐藏维度 | 32K上下文</text>
+              <text x="222" y="42" text-anchor="middle" fill="#8888a0" font-size="12">架构参数 (mini版本): 32层 | 32个注意力头 | 4096隐藏维度 | 32K上下文</text>
+            </g>
+          </g>
+
+          <!-- Output Section -->
+          <g transform="translate(900, 80)">
+            <rect x="0" y="0" width="250" height="120" rx="12" fill="#12121a" stroke="url(#grad-orange)" stroke-width="2"/>
+            <text x="125" y="30" text-anchor="middle" fill="#f97316" font-size="16" font-weight="bold">输出层</text>
+            <rect x="20" y="45" width="210" height="30" rx="6" fill="rgba(249, 115, 22, 0.2)"/>
+            <text x="125" y="66" text-anchor="middle" fill="#e8e8f0" font-size="13">Mask Predictor</text>
+            <rect x="20" y="82" width="210" height="30" rx="6" fill="rgba(249, 115, 22, 0.2)"/>
+            <text x="125" y="103" text-anchor="middle" fill="#e8e8f0" font-size="13">Vocabulary Projection</text>
+          </g>
+
+          <!-- Arrows -->
+          <path d="M 305 140 L 345 140" stroke="#00d4ff" stroke-width="2" marker-end="url(#arrow)"/>
+          <path d="M 855 140 L 895 140" stroke="#00d4ff" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Training Pipeline Section -->
+          <g transform="translate(50, 430)">
+            <rect x="0" y="0" width="1100" height="180" rx="16" fill="#12121a" stroke="#2a2a3e" stroke-width="2"/>
+            <text x="550" y="35" text-anchor="middle" fill="#e8e8f0" font-size="18" font-weight="bold">三阶段 WSD 训练流程</text>
+
+            <!-- Phase 1: Warmup -->
+            <g transform="translate(30, 55)">
+              <rect x="0" y="0" width="320" height="110" rx="10" fill="rgba(0, 212, 255, 0.1)" stroke="url(#grad-blue)" stroke-width="1.5"/>
+              <text x="160" y="25" text-anchor="middle" fill="#00d4ff" font-size="14" font-weight="bold">Phase 1: Warmup</text>
+              <text x="160" y="50" text-anchor="middle" fill="#e8e8f0" font-size="12">Block Diffusion 渐进训练</text>
+              <text x="160" y="70" text-anchor="middle" fill="#8888a0" font-size="11">block_size: 1 → 4 → 32 → 64 → 4096</text>
+              <text x="160" y="90" text-anchor="middle" fill="#8888a0" font-size="11">从AR因果生成过渡到块级扩散</text>
+            </g>
+
+            <!-- Phase 2: Stable -->
+            <g transform="translate(390, 55)">
+              <rect x="0" y="0" width="320" height="110" rx="10" fill="rgba(139, 92, 246, 0.1)" stroke="url(#grad-purple)" stroke-width="1.5"/>
+              <text x="160" y="25" text-anchor="middle" fill="#8b5cf6" font-size="14" font-weight="bold">Phase 2: Stable</text>
+              <text x="160" y="50" text-anchor="middle" fill="#e8e8f0" font-size="12">Full-Sequence Diffusion</text>
+              <text x="160" y="70" text-anchor="middle" fill="#8888a0" font-size="11">完整序列级扩散训练</text>
+              <text x="160" y="90" text-anchor="middle" fill="#8888a0" font-size="11">大规模知识学习 (~20T tokens)</text>
+            </g>
+
+            <!-- Phase 3: Decay -->
+            <g transform="translate(750, 55)">
+              <rect x="0" y="0" width="320" height="110" rx="10" fill="rgba(249, 115, 22, 0.1)" stroke="url(#grad-orange)" stroke-width="1.5"/>
+              <text x="160" y="25" text-anchor="middle" fill="#f97316" font-size="14" font-weight="bold">Phase 3: Decay</text>
+              <text x="160" y="50" text-anchor="middle" fill="#e8e8f0" font-size="12">Block Diffusion 紧凑化</text>
+              <text x="160" y="70" text-anchor="middle" fill="#8888a0" font-size="11">回归紧凑block_size</text>
+              <text x="160" y="90" text-anchor="middle" fill="#8888a0" font-size="11">优化推理效率</text>
+            </g>
+
+            <!-- Arrows between phases -->
+            <path d="M 355 110 L 385 110" stroke="#00d4ff" stroke-width="2" marker-end="url(#arrow)"/>
+            <path d="M 715 110 L 745 110" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+          </g>
+
+          <!-- Post-training Section -->
+          <g transform="translate(50, 640)">
+            <rect x="0" y="0" width="1100" height="130" rx="16" fill="#12121a" stroke="#2a2a3e" stroke-width="2"/>
+            <text x="550" y="35" text-anchor="middle" fill="#e8e8f0" font-size="18" font-weight="bold">后训练对齐</text>
+
+            <!-- SFT -->
+            <g transform="translate(200, 55)">
+              <rect x="0" y="0" width="280" height="60" rx="10" fill="rgba(16, 185, 129, 0.15)" stroke="url(#grad-green)" stroke-width="1.5"/>
+              <text x="140" y="25" text-anchor="middle" fill="#10b981" font-size="14" font-weight="bold">SFT (监督微调)</text>
+              <text x="140" y="45" text-anchor="middle" fill="#8888a0" font-size="11">指令跟随能力对齐</text>
+            </g>
+
+            <!-- DPO -->
+            <g transform="translate(620, 55)">
+              <rect x="0" y="0" width="280" height="60" rx="10" fill="rgba(236, 72, 153, 0.15)" stroke="url(#grad-pink)" stroke-width="1.5"/>
+              <text x="140" y="25" text-anchor="middle" fill="#ec4899" font-size="14" font-weight="bold">DPO (直接偏好优化)</text>
+              <text x="140" y="45" text-anchor="middle" fill="#8888a0" font-size="11">人类偏好对齐</text>
+            </g>
+
+            <!-- Arrow -->
+            <path d="M 485 85 L 615 85" stroke="#10b981" stroke-width="2" marker-end="url(#arrow)"/>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <!-- Diffusion Process Demo -->
+    <section id="diffusion-demo">
+      <h2 class="section-title">扩散采样过程演示</h2>
+      <div class="diffusion-demo">
+        <p style="color: var(--text-secondary); margin-bottom: 10px;">点击按钮观看扩散模型如何逐步去噪生成文本</p>
+        <button class="interactive-btn" onclick="startDiffusionDemo()">▶ 开始演示</button>
+        
+        <div class="diffusion-steps" id="diffusion-steps">
+          <div class="diffusion-step" id="step-0">
+            <div class="tokens"><span class="mask">[M]</span><span class="mask">[M]</span><span class="mask">[M]</span><span class="mask">[M]</span><span class="mask">[M]</span></div>
+            <div class="step-label">t = 1.0 (全掩码)</div>
+          </div>
+          <span class="arrow-icon">→</span>
+          <div class="diffusion-step" id="step-1">
+            <div class="tokens"><span class="mask">[M]</span> <span class="revealed">is</span> <span class="mask">[M]</span><span class="mask">[M]</span><span class="mask">[M]</span></div>
+            <div class="step-label">t = 0.75</div>
+          </div>
+          <span class="arrow-icon">→</span>
+          <div class="diffusion-step" id="step-2">
+            <div class="tokens"><span class="revealed">This</span> <span class="revealed">is</span> <span class="mask">[M]</span><span class="mask">[M]</span><span class="mask">[M]</span></div>
+            <div class="step-label">t = 0.50</div>
+          </div>
+          <span class="arrow-icon">→</span>
+          <div class="diffusion-step" id="step-3">
+            <div class="tokens"><span class="revealed">This</span> <span class="revealed">is</span> <span class="revealed">a</span> <span class="mask">[M]</span> <span class="mask">[M]</span></div>
+            <div class="step-label">t = 0.25</div>
+          </div>
+          <span class="arrow-icon">→</span>
+          <div class="diffusion-step" id="step-4">
+            <div class="tokens"><span class="revealed">This</span> <span class="revealed">is</span> <span class="revealed">a</span> <span class="revealed">test</span> <span class="revealed">!</span></div>
+            <div class="step-label">t = 0.0 (完成)</div>
+          </div>
+        </div>
+        
+        <p style="color: var(--text-secondary); font-size: 14px; margin-top: 20px;">
+          <strong style="color: var(--accent-purple);">关键特点：</strong>每一步同时预测所有 [MASK] token，而非逐个生成。支持 KV-Cache 复用和块级并行解码。
+        </p>
+      </div>
+    </section>
+
+    <!-- Model Variants -->
+    <section id="models">
+      <h2 class="section-title">模型版本</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+            <div style="width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); display: flex; align-items: center; justify-content: center; font-size: 24px;">🔹</div>
+            <div>
+              <h3 style="font-size: 22px; margin-bottom: 4px;">LLaDA2.0-mini</h3>
+              <span style="color: var(--text-secondary); font-size: 14px;">轻量级指令微调版本</span>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+            <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;">
+              <div style="font-size: 24px; font-weight: bold; color: var(--accent-blue);">16B</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">总参数</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;">
+              <div style="font-size: 24px; font-weight: bold; color: var(--accent-green);">1.4B</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">激活参数</div>
+            </div>
+          </div>
+          <p style="color: var(--text-secondary); font-size: 14px;">适合资源受限环境，提供优秀的性能与效率平衡。</p>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+            <div style="width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, var(--accent-pink), var(--accent-orange)); display: flex; align-items: center; justify-content: center; font-size: 24px;">⚡</div>
+            <div>
+              <h3 style="font-size: 22px; margin-bottom: 4px;">LLaDA2.0-flash</h3>
+              <span style="color: var(--text-secondary); font-size: 14px;">旗舰级高性能版本</span>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+            <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;">
+              <div style="font-size: 24px; font-weight: bold; color: var(--accent-pink);">100B</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">总参数</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;">
+              <div style="font-size: 24px; font-weight: bold; color: var(--accent-green);">6.1B</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">激活参数</div>
+            </div>
+          </div>
+          <p style="color: var(--text-secondary); font-size: 14px;">迄今最大的扩散语言模型，在代码生成和复杂推理任务上表现出色。</p>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+            <div style="width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, var(--accent-green), var(--accent-blue)); display: flex; align-items: center; justify-content: center; font-size: 24px;">🚀</div>
+            <div>
+              <h3 style="font-size: 22px; margin-bottom: 4px;">LLaDA2.0-mini-CAP</h3>
+              <span style="color: var(--text-secondary); font-size: 14px;">置信度感知并行加速版</span>
+            </div>
+          </div>
+          <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 12px;">基于 mini 版本，增强了 Confidence-Aware Parallel (CAP) 解码策略，显著提升推理效率。</p>
+          <div style="background: rgba(16, 185, 129, 0.1); padding: 10px 14px; border-radius: 8px; font-size: 13px; color: var(--accent-green);">
+            ✓ 高置信度token优先确定 &nbsp;&nbsp; ✓ 动态调整采样步数
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+            <div style="width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, var(--accent-orange), var(--accent-yellow)); display: flex; align-items: center; justify-content: center; font-size: 24px;">⚡</div>
+            <div>
+              <h3 style="font-size: 22px; margin-bottom: 4px;">LLaDA2.0-flash-CAP</h3>
+              <span style="color: var(--text-secondary); font-size: 14px;">旗舰加速版</span>
+            </div>
+          </div>
+          <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 12px;">100B 模型的 CAP 加速版本，实现高达 535 tokens/s 的推理速度，是同类 AR 模型的 2.1 倍。</p>
+          <div style="background: rgba(249, 115, 22, 0.1); padding: 10px 14px; border-radius: 8px; font-size: 13px; color: var(--accent-orange);">
+            ✓ 535 tokens/s &nbsp;&nbsp; ✓ KV-Cache 复用 &nbsp;&nbsp; ✓ 块级并行解码
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Benchmarks -->
+    <section id="benchmarks">
+      <h2 class="section-title">性能评估</h2>
+      <div class="card">
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab('code')">代码生成</button>
+          <button class="tab-btn" onclick="switchTab('math')">数学推理</button>
+          <button class="tab-btn" onclick="switchTab('general')">通用能力</button>
+        </div>
+
+        <div class="tab-content active" id="tab-code">
+          <div class="benchmark-label"><span>HumanEval</span><span style="color: var(--accent-green);">94.51%</span></div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill" style="width: 94.51%; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));">94.51</div>
+          </div>
+          
+          <div class="benchmark-label"><span>MBPP</span><span style="color: var(--accent-blue);">85.2%</span></div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill" style="width: 85.2%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));">85.2</div>
+          </div>
+
+          <div class="benchmark-label"><span>LiveCodeBench</span><span style="color: var(--accent-purple);">42.8%</span></div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill" style="width: 42.8%; background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink));">42.8</div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-math">
+          <div class="benchmark-label"><span>GSM8K</span><span style="color: var(--accent-green);">96.06%</span></div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill" style="width: 96.06%; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));">96.06</div>
+          </div>
+          
+          <div class="benchmark-label"><span>MATH</span><span style="color: var(--accent-blue);">76.4%</span></div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill" style="width: 76.4%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));">76.4</div>
+          </div>
+
+          <div class="benchmark-label"><span>AIME 2024</span><span style="color: var(--accent-purple);">23.3%</span></div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill" style="width: 23.3%; background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink));">23.3</div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-general">
+          <div class="benchmark-label"><span>MMLU</span><span style="color: var(--accent-green);">79.8%</span></div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill" style="width: 79.8%; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));">79.8</div>
+          </div>
+          
+          <div class="benchmark-label"><span>MMLU-Pro</span><span style="color: var(--accent-blue);">58.3%</span></div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill" style="width: 58.3%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));">58.3</div>
+          </div>
+
+          <div class="benchmark-label"><span>IFEval</span><span style="color: var(--accent-purple);">82.6%</span></div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill" style="width: 82.6%; background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink));">82.6</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Inference Optimization -->
+    <section id="inference">
+      <h2 class="section-title">推理加速技术</h2>
+      <div class="grid-3">
+        <div class="card">
+          <div class="feature-icon" style="background: rgba(0, 212, 255, 0.15); margin-bottom: 16px;">🔄</div>
+          <h4 style="font-size: 18px; margin-bottom: 12px;">并行解码</h4>
+          <p style="color: var(--text-secondary); font-size: 14px;">
+            每一步同时预测所有被掩码的token，而非逐个生成。块级并行解码进一步提升吞吐量。
+          </p>
+        </div>
+        <div class="card">
+          <div class="feature-icon" style="background: rgba(139, 92, 246, 0.15); margin-bottom: 16px;">💾</div>
+          <h4 style="font-size: 18px; margin-bottom: 12px;">KV-Cache 复用</h4>
+          <p style="color: var(--text-secondary); font-size: 14px;">
+            基于 dInfer 和 SGLang 构建的推理引擎，支持 KV-Cache 跨步骤复用，减少重复计算。
+          </p>
+        </div>
+        <div class="card">
+          <div class="feature-icon" style="background: rgba(236, 72, 153, 0.15); margin-bottom: 16px;">🎯</div>
+          <h4 style="font-size: 18px; margin-bottom: 12px;">CAP 策略</h4>
+          <p style="color: var(--text-secondary); font-size: 14px;">
+            Confidence-Aware Parallel：高置信度token优先确定，动态调整采样步数，平衡质量与速度。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Usage Code -->
+    <section id="usage">
+      <h2 class="section-title">快速开始</h2>
+      <div class="card">
+        <div class="code-block">
+<span class="keyword">import</span> torch
+<span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer
+
+<span class="comment"># 加载模型</span>
+model_path = <span class="string">"inclusionAI/LLaDA2.0-flash"</span>
+model = AutoModelForCausalLM.<span class="function">from_pretrained</span>(
+    model_path,
+    trust_remote_code=<span class="keyword">True</span>,
+    device_map=<span class="string">"auto"</span>
+)
+model = model.<span class="function">to</span>(torch.bfloat16)
+model.<span class="function">eval</span>()
+
+tokenizer = AutoTokenizer.<span class="function">from_pretrained</span>(model_path, trust_remote_code=<span class="keyword">True</span>)
+
+<span class="comment"># 生成文本</span>
+prompt = <span class="string">"Explain the concept of diffusion models in simple terms."</span>
+input_ids = tokenizer.<span class="function">apply_chat_template</span>(
+    [{<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: prompt}],
+    add_generation_prompt=<span class="keyword">True</span>,
+    tokenize=<span class="keyword">True</span>,
+    return_tensors=<span class="string">"pt"</span>
+)
+
+generated_tokens = model.<span class="function">generate</span>(
+    inputs=input_ids,
+    eos_early_stop=<span class="keyword">True</span>,
+    gen_length=<span class="number">512</span>,
+    block_length=<span class="number">32</span>,
+    steps=<span class="number">32</span>,
+    temperature=<span class="number">0.0</span>
+)
+
+<span class="keyword">print</span>(tokenizer.<span class="function">decode</span>(generated_tokens[<span class="number">0</span>], skip_special_tokens=<span class="keyword">True</span>))
+        </div>
+      </div>
+    </section>
+
+    <!-- Applications -->
+    <section id="applications">
+      <h2 class="section-title">应用场景</h2>
+      <div class="grid-4">
+        <div class="card" style="text-align: center;">
+          <div style="font-size: 40px; margin-bottom: 16px;">💻</div>
+          <h4 style="margin-bottom: 8px;">代码生成</h4>
+          <p style="color: var(--text-secondary); font-size: 13px;">高质量代码补全与生成</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div style="font-size: 40px; margin-bottom: 16px;">🧮</div>
+          <h4 style="margin-bottom: 8px;">数学推理</h4>
+          <p style="color: var(--text-secondary); font-size: 13px;">复杂数学问题求解</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div style="font-size: 40px; margin-bottom: 16px;">🤖</div>
+          <h4 style="margin-bottom: 8px;">智能Agent</h4>
+          <p style="color: var(--text-secondary); font-size: 13px;">多步推理与工具调用</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div style="font-size: 40px; margin-bottom: 16px;">✍️</div>
+          <h4 style="margin-bottom: 8px;">文本生成</h4>
+          <p style="color: var(--text-secondary); font-size: 13px;">创意写作与内容创作</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p style="margin-bottom: 16px;">
+      <a href="https://github.com/inclusionAI/LLaDA2.0" target="_blank">GitHub</a> · 
+      <a href="https://huggingface.co/collections/inclusionAI/llada-20" target="_blank">Hugging Face</a> · 
+      <a href="https://arxiv.org/abs/2512.15745" target="_blank">arXiv Paper</a>
+    </p>
+    <p>Developed by InclusionAI Team, Ant Group © 2025</p>
+  </footer>
+
+  <script>
+    // Tab switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    // Diffusion demo animation
+    let demoRunning = false;
+    function startDiffusionDemo() {
+      if (demoRunning) return;
+      demoRunning = true;
+      
+      const steps = document.querySelectorAll('.diffusion-step');
+      steps.forEach(step => step.classList.remove('active'));
+      
+      let currentStep = 0;
+      const interval = setInterval(() => {
+        if (currentStep > 0) {
+          steps[currentStep - 1].classList.remove('active');
+        }
+        if (currentStep < steps.length) {
+          steps[currentStep].classList.add('active');
+          currentStep++;
+        } else {
+          clearInterval(interval);
+          demoRunning = false;
+        }
+      }, 800);
+    }
+
+    // Animate elements on scroll
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-in');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('section').forEach(section => {
+      observer.observe(section);
+    });
+
+    // Animate benchmark bars on scroll
+    const benchmarkObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const fills = entry.target.querySelectorAll('.benchmark-fill');
+          fills.forEach(fill => {
+            const width = fill.style.width;
+            fill.style.width = '0%';
+            setTimeout(() => {
+              fill.style.width = width;
+            }, 100);
+          });
+        }
+      });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('#benchmarks .card').forEach(card => {
+      benchmarkObserver.observe(card);
+    });
+  </script>
+</body>
+</html>
