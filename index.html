@@ -6,7 +6,7 @@
     <title>Notion Pages</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -15,151 +15,222 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #fafafa;
-            color: #333;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 40px 20px;
         }
 
         .container {
-            max-width: 600px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
         .search-box {
             position: relative;
-            margin-bottom: 24px;
+            max-width: 480px;
+            margin: 0 auto 40px;
         }
 
         .search-box input {
             width: 100%;
-            padding: 12px 16px 12px 42px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 15px;
-            background: #fff;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            padding: 16px 20px 16px 52px;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .search-box input:focus {
             outline: none;
-            border-color: #999;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transform: translateY(-2px);
+            box-shadow: 0 14px 50px rgba(0,0,0,0.2);
         }
 
         .search-box input::placeholder {
-            color: #aaa;
+            color: #999;
         }
 
         .search-box svg {
             position: absolute;
-            left: 14px;
+            left: 18px;
             top: 50%;
             transform: translateY(-50%);
-            width: 18px;
-            height: 18px;
-            color: #999;
+            width: 20px;
+            height: 20px;
+            color: #764ba2;
         }
 
         .breadcrumb {
-            margin-bottom: 16px;
+            text-align: center;
+            margin-bottom: 32px;
             font-size: 14px;
-            color: #666;
+            color: rgba(255,255,255,0.8);
         }
 
         .breadcrumb a {
-            color: #666;
+            color: #fff;
             text-decoration: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
         }
 
         .breadcrumb a:hover {
-            color: #333;
-            text-decoration: underline;
+            background: rgba(255,255,255,0.2);
         }
 
         .breadcrumb span {
-            margin: 0 6px;
-            color: #ccc;
+            margin: 0 4px;
+            opacity: 0.6;
         }
 
-        .file-list {
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
             background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
+            border-radius: 20px;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .card-preview {
+            height: 180px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            position: relative;
             overflow: hidden;
         }
 
-        .file-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            border-bottom: 1px solid #f0f0f0;
-            text-decoration: none;
-            color: #333;
-            transition: background 0.15s;
+        .card-preview iframe {
+            width: 200%;
+            height: 200%;
+            border: none;
+            transform: scale(0.5);
+            transform-origin: top left;
+            pointer-events: none;
         }
 
-        .file-item:last-child {
-            border-bottom: none;
+        .card-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        .file-item:hover {
-            background: #f8f8f8;
-        }
-
-        .file-item svg {
-            width: 18px;
-            height: 18px;
-            margin-right: 12px;
-            flex-shrink: 0;
-        }
-
-        .file-item.folder svg {
+        .card-preview .folder-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 64px;
+            height: 64px;
             color: #f59e0b;
+            opacity: 0.8;
         }
 
-        .file-item.file svg {
-            color: #6b7280;
+        .card-preview .file-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            color: #6366f1;
+            opacity: 0.6;
         }
 
-        .file-name {
-            flex: 1;
-            font-size: 14px;
-        }
-
-        .file-size {
-            font-size: 12px;
-            color: #999;
-            margin-left: 12px;
-        }
-
-        .loading, .empty, .error {
-            text-align: center;
-            padding: 48px 20px;
-            color: #999;
-            font-size: 14px;
-        }
-
-        .spinner {
-            width: 24px;
-            height: 24px;
-            border: 2px solid #e0e0e0;
-            border-top-color: #666;
+        .card-preview .preview-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #764ba2;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin: 0 auto 12px;
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
-        .no-results {
-            padding: 32px;
+        .card-body {
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-meta {
+            font-size: 13px;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-type {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .card.folder .card-type {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .loading-container, .empty-state {
             text-align: center;
-            color: #999;
-            font-size: 14px;
+            padding: 80px 20px;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            opacity: 0.6;
+            margin-bottom: 16px;
         }
     </style>
 </head>
@@ -175,8 +246,8 @@
         <nav class="breadcrumb" id="breadcrumb"></nav>
 
         <main id="content">
-            <div class="loading">
-                <div class="spinner"></div>
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
                 <p>加载中...</p>
             </div>
         </main>
@@ -189,7 +260,7 @@
             branch: 'main',
             basePath: '',
             hidePatterns: [
-                /^\./, 
+                /^\./,
                 /^index\.html$/,
                 /^node_modules$/,
                 /^package-lock\.json$/,
@@ -197,10 +268,10 @@
         };
 
         const ICONS = {
-            folder: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+            folder: `<svg class="folder-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19.5 21a3 3 0 003-3v-4.5a3 3 0 00-3-3h-15a3 3 0 00-3 3V18a3 3 0 003 3h15zM1.5 10.146V6a3 3 0 013-3h5.379a2.25 2.25 0 011.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 013 3v1.146A4.483 4.483 0 0019.5 9h-15a4.483 4.483 0 00-3 1.146z"/>
             </svg>`,
-            file: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            file: `<svg class="file-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
             </svg>`
         };
@@ -219,8 +290,42 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
+        function getFileType(name) {
+            const ext = name.split('.').pop().toLowerCase();
+            const types = {
+                'html': 'HTML',
+                'htm': 'HTML',
+                'md': 'Markdown',
+                'png': 'Image',
+                'jpg': 'Image',
+                'jpeg': 'Image',
+                'gif': 'Image',
+                'svg': 'Image',
+                'webp': 'Image',
+                'pdf': 'PDF',
+                'js': 'JavaScript',
+                'css': 'CSS',
+                'json': 'JSON',
+            };
+            return types[ext] || ext.toUpperCase();
+        }
+
+        function isPreviewable(name) {
+            const ext = name.split('.').pop().toLowerCase();
+            return ['html', 'htm'].includes(ext);
+        }
+
+        function isImage(name) {
+            const ext = name.split('.').pop().toLowerCase();
+            return ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext);
+        }
+
         function getCurrentPath() {
             return window.location.hash.slice(1) || CONFIG.basePath;
+        }
+
+        function getPageUrl(filePath) {
+            return `https://${CONFIG.owner}.github.io/${CONFIG.repo}/${filePath}`;
         }
 
         function renderBreadcrumb(path) {
@@ -229,11 +334,11 @@
                 el.innerHTML = '';
                 return;
             }
-            
+
             const parts = path.split('/').filter(Boolean);
             let html = `<a href="#">根目录</a>`;
             let currentPath = '';
-            
+
             parts.forEach((part, i) => {
                 currentPath += (currentPath ? '/' : '') + part;
                 html += `<span>/</span>`;
@@ -243,23 +348,20 @@
                     html += `<a href="#${currentPath}">${part}</a>`;
                 }
             });
-            
+
             el.innerHTML = html;
         }
 
         function renderFiles(files, query = '') {
             const content = document.getElementById('content');
-            
-            // 过滤
+
             files = files.filter(f => !shouldHide(f.name));
-            
-            // 搜索
+
             if (query) {
                 const q = query.toLowerCase();
                 files = files.filter(f => f.name.toLowerCase().includes(q));
             }
 
-            // 排序
             files.sort((a, b) => {
                 if (a.type === 'dir' && b.type !== 'dir') return -1;
                 if (a.type !== 'dir' && b.type === 'dir') return 1;
@@ -267,68 +369,89 @@
             });
 
             if (files.length === 0) {
-                content.innerHTML = `<div class="no-results">${query ? '没有找到匹配的文件' : '此目录为空'}</div>`;
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                        </svg>
+                        <p>${query ? '没有找到匹配的文件' : '此目录为空'}</p>
+                    </div>
+                `;
                 return;
             }
 
-            let html = '<div class="file-list">';
-            
+            let html = '<div class="file-grid">';
+
             files.forEach(file => {
                 const isDir = file.type === 'dir';
-                const href = isDir 
-                    ? `#${file.path}` 
-                    : `https://${CONFIG.owner}.github.io/${CONFIG.repo}/${file.path}`;
+                const href = isDir ? `#${file.path}` : getPageUrl(file.path);
                 const target = isDir ? '' : 'target="_blank"';
-                const icon = isDir ? ICONS.folder : ICONS.file;
+                const fileType = isDir ? '文件夹' : getFileType(file.name);
                 const size = isDir ? '' : formatSize(file.size);
-                
+                const pageUrl = getPageUrl(file.path);
+
+                let previewContent = '';
+                if (isDir) {
+                    previewContent = ICONS.folder;
+                } else if (isImage(file.name)) {
+                    previewContent = `<img src="${pageUrl}" alt="${file.name}" loading="lazy">`;
+                } else if (isPreviewable(file.name)) {
+                    previewContent = `<div class="preview-loading"></div><iframe src="${pageUrl}" loading="lazy" onload="this.previousElementSibling.style.display='none'"></iframe>`;
+                } else {
+                    previewContent = ICONS.file;
+                }
+
                 html += `
-                    <a class="file-item ${isDir ? 'folder' : 'file'}" href="${href}" ${target}>
-                        ${icon}
-                        <span class="file-name">${file.name}</span>
-                        ${size ? `<span class="file-size">${size}</span>` : ''}
+                    <a class="card ${isDir ? 'folder' : 'file'}" href="${href}" ${target}>
+                        <div class="card-preview">
+                            ${previewContent}
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title" title="${file.name}">${file.name}</div>
+                            <div class="card-meta">
+                                <span class="card-type">${fileType}</span>
+                                ${size ? `<span>${size}</span>` : ''}
+                            </div>
+                        </div>
                     </a>
                 `;
             });
-            
+
             html += '</div>';
             content.innerHTML = html;
         }
 
         async function loadDirectory(path) {
             const content = document.getElementById('content');
-            content.innerHTML = '<div class="loading"><div class="spinner"></div><p>加载中...</p></div>';
-            
+            content.innerHTML = '<div class="loading-container"><div class="loading-spinner"></div><p>加载中...</p></div>';
+
             renderBreadcrumb(path);
             document.getElementById('search').value = '';
 
             try {
                 const apiPath = path ? `/${path}` : '';
                 const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents${apiPath}?ref=${CONFIG.branch}`;
-                
+
                 const res = await fetch(url);
                 if (!res.ok) throw new Error(res.status === 404 ? '路径不存在' : '加载失败');
-                
+
                 const data = await res.json();
                 if (!Array.isArray(data)) throw new Error('数据格式错误');
-                
+
                 allFiles = data;
                 renderFiles(allFiles);
-                
+
             } catch (err) {
-                content.innerHTML = `<div class="error">${err.message}</div>`;
+                content.innerHTML = `<div class="empty-state"><p>${err.message}</p></div>`;
             }
         }
 
-        // 搜索
         document.getElementById('search').addEventListener('input', (e) => {
             renderFiles(allFiles, e.target.value);
         });
 
-        // hash 变化
         window.addEventListener('hashchange', () => loadDirectory(getCurrentPath()));
 
-        // 初始化
         document.addEventListener('DOMContentLoaded', () => loadDirectory(getCurrentPath()));
     </script>
 </body>
