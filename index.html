@@ -223,21 +223,16 @@
             font-size: 12px;
             font-weight: 300;
             color: rgba(255,255,255,0.4);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
-        .card-type {
-            color: rgba(255,255,255,0.5);
-            text-transform: uppercase;
-            font-size: 10px;
-            letter-spacing: 1.5px;
+        .card-time {
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
         }
 
-        .card.folder .card-type {
-            color: #c9a66b;
+        .card.folder .card-time {
+            color: rgba(201, 166, 107, 0.6);
         }
 
         .loading-container, .empty-state {
@@ -326,26 +321,6 @@
 
         function shouldHide(name) {
             return CONFIG.hidePatterns.some(p => p.test(name));
-        }
-
-        function getFileType(name) {
-            const ext = name.split('.').pop().toLowerCase();
-            const types = {
-                'html': 'HTML',
-                'htm': 'HTML',
-                'md': 'Markdown',
-                'png': 'Image',
-                'jpg': 'Image',
-                'jpeg': 'Image',
-                'gif': 'Image',
-                'svg': 'Image',
-                'webp': 'Image',
-                'pdf': 'PDF',
-                'js': 'Script',
-                'css': 'Style',
-                'json': 'JSON',
-            };
-            return types[ext] || ext.toUpperCase();
         }
 
         function isPreviewable(name) {
@@ -477,7 +452,6 @@
                 const isDir = file.type === 'dir';
                 const href = isDir ? `#${file.path}` : getPageUrl(file.path);
                 const target = isDir ? '' : 'target="_blank"';
-                const fileType = isDir ? 'Folder' : getFileType(file.name);
                 const pageUrl = getPageUrl(file.path);
 
                 let previewContent = '';
@@ -494,14 +468,14 @@
                 const displayName = currentQuery ? highlightText(file.name, currentQuery) : file.name;
 
                 html += `
-                    <a class="card ${isDir ? 'folder' : 'file'}" href="${href}" ${target}>
+                    <a class="card ${isDir ? 'folder' : 'file'}" href="${href}" ${target} data-path="${file.path}">
                         <div class="card-preview">
                             ${previewContent}
                         </div>
                         <div class="card-body">
                             <div class="card-title" title="${file.name}">${displayName}</div>
                             <div class="card-meta">
-                                <span class="card-type">${fileType}</span>
+                                <span class="card-time" data-file="${file.path}">加载中...</span>
                             </div>
                         </div>
                     </a>
@@ -510,6 +484,45 @@
 
             html += '</div>';
             content.innerHTML = html;
+            
+            // 异步加载更新时间
+            loadFileTimes(files);
+        }
+
+        async function loadFileTimes(files) {
+            for (const file of files) {
+                try {
+                    const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/commits?path=${file.path}&per_page=1`;
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const commits = await res.json();
+                        if (commits.length > 0) {
+                            const date = new Date(commits[0].commit.committer.date);
+                            const timeStr = formatTime(date);
+                            const el = document.querySelector(`.card-time[data-file="${file.path}"]`);
+                            if (el) el.textContent = timeStr;
+                        }
+                    }
+                } catch (e) {
+                    const el = document.querySelector(`.card-time[data-file="${file.path}"]`);
+                    if (el) el.textContent = '';
+                }
+            }
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 1) return '刚刚';
+            if (minutes < 60) return `${minutes} 分钟前`;
+            if (hours < 24) return `${hours} 小时前`;
+            if (days < 30) return `${days} 天前`;
+            
+            return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
         }
 
         async function loadDirectory(path) {
