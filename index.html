@@ -277,7 +277,7 @@
                 const isDir = file.type === 'dir';
                 const href = isDir 
                     ? `#${file.path}` 
-                    : `https://github.com/${CONFIG.owner}/${CONFIG.repo}/blob/${CONFIG.branch}/${file.path}`;
+                    : `https://${CONFIG.owner}.github.io/${CONFIG.repo}/${file.path}`;
                 const target = isDir ? '' : 'target="_blank"';
                 const icon = isDir ? ICONS.folder : ICONS.file;
                 const size = isDir ? '' : formatSize(file.size);
