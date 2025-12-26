@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nemotron-3-Nano-30B-A3B Architecture</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.2rem;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #76b900, #00d4aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #8892b0;
+      margin-bottom: 30px;
+      font-size: 1.1rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px rgba(118, 185, 0, 0.2);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #76b900;
+    }
+
+    .stat-label {
+      color: #8892b0;
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .section {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #fff;
+    }
+
+    .layer-pattern {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .pattern-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .repeat-badge {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #ccd6f6;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .layer-block {
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s;
+    }
+
+    .layer-block:hover {
+      transform: scale(1.05);
+    }
+
+    .mamba {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    }
+
+    .moe {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+    }
+
+    .attention {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+    }
+
+    .arrow {
+      color: #4a5568;
+      font-size: 1.2rem;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+    }
+
+    .legend-dot.mamba { background: #3b82f6; }
+    .legend-dot.moe { background: #f97316; }
+    .legend-dot.attention { background: #22c55e; }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .detail-card {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .detail-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+    }
+
+    .detail-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .detail-title.blue { color: #60a5fa; }
+    .detail-title.green { color: #4ade80; }
+    .detail-title.orange { color: #fb923c; }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .detail-label {
+      color: #8892b0;
+    }
+
+    .detail-value {
+      color: #fff;
+      font-family: 'Consolas', monospace;
+    }
+
+    .moe-visual {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .moe-router {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      padding: 10px 24px;
+      border-radius: 10px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    .moe-arrow {
+      color: #8b5cf6;
+      font-size: 1.5rem;
+      margin: 8px 0;
+    }
+
+    .experts-container {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-width: 500px;
+      margin: 0 auto 16px;
+    }
+
+    .expert {
+      width: 40px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .expert.active {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+    }
+
+    .expert.inactive {
+      background: rgba(255, 255, 255, 0.1);
+      color: #64748b;
+    }
+
+    .expert.shared {
+      background: linear-gradient(135deg, #eab308, #ca8a04);
+    }
+
+    .experts-note {
+      color: #64748b;
+      font-size: 0.85rem;
+      margin: 8px 0;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 12px 16px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .comparison-table th {
+      color: #8892b0;
+      font-weight: 500;
+    }
+
+    .comparison-table td:first-child {
+      text-align: left;
+      color: #ccd6f6;
+    }
+
+    .highlight-blue { color: #60a5fa; }
+    .highlight-purple { color: #a78bfa; }
+    .highlight-green { color: #4ade80; }
+    .highlight-red { color: #f87171; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>NVIDIA Nemotron-3-Nano-30B-A3B</h1>
+    <p class="subtitle">Mamba2-Transformer Hybrid MoE Architecture</p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">31.6B</div>
+        <div class="stat-label">Total Parameters</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">3.6B</div>
+        <div class="stat-label">Active Parameters</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">52</div>
+        <div class="stat-label">Total Layers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">1M</div>
+        <div class="stat-label">Context Length</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Layer Pattern</h2>
+      <div class="layer-pattern">
+        <div class="pattern-row">
+          <span class="repeat-badge">×5</span>
+          <div class="layer-block mamba">Mamba-2</div>
+          <span class="arrow">→</span>
+          <div class="layer-block moe">MoE</div>
+        </div>
+        <div class="pattern-row">
+          <span class="repeat-badge">×3</span>
+          <div class="layer-block mamba">Mamba-2</div>
+          <span class="arrow">→</span>
+          <div class="layer-block attention">Attention</div>
+          <span class="arrow">→</span>
+          <div class="layer-block moe">MoE</div>
+        </div>
+        <div class="pattern-row">
+          <span class="repeat-badge">×4</span>
+          <div class="layer-block mamba">Mamba-2</div>
+          <span class="arrow">→</span>
+          <div class="layer-block moe">MoE</div>
+        </div>
+        <div class="pattern-row">
+          <span class="repeat-badge">×1</span>
+          <div class="layer-block mamba">Mamba-2</div>
+          <span class="arrow">→</span>
+          <div class="layer-block attention">Attention</div>
+          <span class="arrow">→</span>
+          <div class="layer-block moe">MoE</div>
+        </div>
+      </div>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-dot mamba"></div>
+          <span>Mamba-2: 23 layers</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot moe"></div>
+          <span>MoE: 23 layers</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot attention"></div>
+          <span>Attention (GQA): 6 layers</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="details-grid">
+      <div class="detail-card">
+        <div class="detail-header">
+          <div class="detail-dot" style="background: #3b82f6;"></div>
+          <span class="detail-title blue">Mamba-2 Layer</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">State Dimension</span>
+          <span class="detail-value">128</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Groups</span>
+          <span class="detail-value">8</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Heads</span>
+          <span class="detail-value">64</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Head Dimension</span>
+          <span class="detail-value">64</span>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-header">
+          <div class="detail-dot" style="background: #22c55e;"></div>
+          <span class="detail-title green">Attention Layer (GQA)</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Q Heads</span>
+          <span class="detail-value">32</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">KV Heads</span>
+          <span class="detail-value">2</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Head Dimension</span>
+          <span class="detail-value">128</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Model Dimension</span>
+          <span class="detail-value">2688</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top: 24px;">
+      <h2 class="section-title">MoE Layer Structure</h2>
+      <div class="moe-visual">
+        <div class="moe-router">MLP Router (Sigmoid Gating)</div>
+        <div class="moe-arrow">↓</div>
+        <p class="experts-note">Select Top-6 from 128 Experts</p>
+        <div class="experts-container">
+          <div class="expert active">E1</div>
+          <div class="expert active">E2</div>
+          <div class="expert active">E3</div>
+          <div class="expert active">E4</div>
+          <div class="expert active">E5</div>
+          <div class="expert active">E6</div>
+          <div class="expert inactive">E7</div>
+          <div class="expert inactive">E8</div>
+          <div class="expert inactive">...</div>
+          <div class="expert inactive">E128</div>
+        </div>
+        <p class="experts-note">+ 2 Shared Experts (Always Active)</p>
+        <div class="experts-container">
+          <div class="expert shared">S1</div>
+          <div class="expert shared">S2</div>
+        </div>
+        <div class="detail-card" style="max-width: 400px; margin: 20px auto 0;">
+          <div class="detail-row">
+            <span class="detail-label">Expert Dimension</span>
+            <span class="detail-value">1856</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Activation</span>
+            <span class="detail-value">Squared ReLU</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Comparison with Qwen3-30B-A3B</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Nemotron-3-Nano</th>
+            <th>Qwen3-30B-A3B</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Architecture</td>
+            <td class="highlight-blue">Mamba2-Transformer Hybrid</td>
+            <td class="highlight-purple">Pure Transformer</td>
+          </tr>
+          <tr>
+            <td>Total Parameters</td>
+            <td>31.6B</td>
+            <td>30.5B</td>
+          </tr>
+          <tr>
+            <td>Active Parameters</td>
+            <td>3.6B</td>
+            <td>3.3B</td>
+          </tr>
+          <tr>
+            <td>Layers</td>
+            <td>52</td>
+            <td>48</td>
+          </tr>
+          <tr>
+            <td>Total Experts</td>
+            <td>128</td>
+            <td>128</td>
+          </tr>
+          <tr>
+            <td>Active Experts</td>
+            <td class="highlight-green">6 + 2 shared</td>
+            <td>8</td>
+          </tr>
+          <tr>
+            <td>State Space Model</td>
+            <td class="highlight-green">✓ (23 Mamba-2)</td>
+            <td class="highlight-red">✗</td>
+          </tr>
+          <tr>
+            <td>Inference Throughput</td>
+            <td class="highlight-green">3.3× faster</td>
+            <td>1× baseline</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
