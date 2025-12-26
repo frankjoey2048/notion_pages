@@ -429,6 +429,8 @@
       font-size: 13px;
       overflow-x: auto;
       line-height: 1.8;
+      white-space: pre;
+      word-wrap: break-word;
     }
 
     .code-block .comment { color: #6a7a8a; }
@@ -1074,8 +1076,7 @@
     <section id="usage">
       <h2 class="section-title">快速开始</h2>
       <div class="card">
-        <div class="code-block">
-<span class="keyword">import</span> torch
+        <div class="code-block"><span class="keyword">import</span> torch
 <span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer
 
 <span class="comment"># 加载模型</span>
@@ -1108,8 +1109,7 @@ generated_tokens = model.<span class="function">generate</span>(
     temperature=<span class="number">0.0</span>
 )
 
-<span class="keyword">print</span>(tokenizer.<span class="function">decode</span>(generated_tokens[<span class="number">0</span>], skip_special_tokens=<span class="keyword">True</span>))
-        </div>
+<span class="keyword">print</span>(tokenizer.<span class="function">decode</span>(generated_tokens[<span class="number">0</span>], skip_special_tokens=<span class="keyword">True</span>))</div>
       </div>
     </section>
 
