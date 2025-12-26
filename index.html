@@ -16,8 +16,8 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #0c0c0c;
-            color: #fff;
+            background: #232326;
+            color: #e8e8ec;
             min-height: 100vh;
             padding: 60px 24px;
         }
@@ -36,24 +36,24 @@
         .search-box input {
             width: 100%;
             padding: 14px 20px 14px 48px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 8px;
             font-size: 14px;
             font-weight: 300;
             letter-spacing: 0.3px;
-            background: rgba(255,255,255,0.03);
-            color: #fff;
+            background: rgba(255,255,255,0.04);
+            color: #e8e8ec;
             transition: all 0.3s ease;
         }
 
         .search-box input:focus {
             outline: none;
-            border-color: rgba(255,255,255,0.25);
-            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.06);
         }
 
         .search-box input::placeholder {
-            color: rgba(255,255,255,0.35);
+            color: rgba(255,255,255,0.3);
         }
 
         .search-box svg {
@@ -63,7 +63,7 @@
             transform: translateY(-50%);
             width: 18px;
             height: 18px;
-            color: rgba(255,255,255,0.35);
+            color: rgba(255,255,255,0.3);
         }
 
         .breadcrumb {
@@ -97,8 +97,8 @@
         }
 
         .card {
-            background: #161616;
-            border: 1px solid rgba(255,255,255,0.06);
+            background: #2c2c31;
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 12px;
             overflow: hidden;
             text-decoration: none;
@@ -108,13 +108,13 @@
 
         .card:hover {
             transform: translateY(-4px);
-            border-color: rgba(255,255,255,0.12);
-            background: #1a1a1a;
+            border-color: rgba(255,255,255,0.15);
+            background: #323238;
         }
 
         .card-preview {
             height: 200px;
-            background: #111;
+            background: #26262b;
             position: relative;
             overflow: hidden;
         }
@@ -155,7 +155,7 @@
             transform: translate(-50%, -50%);
             width: 56px;
             height: 56px;
-            background: rgba(255,255,255,0.04);
+            background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 12px;
             display: flex;
@@ -166,17 +166,17 @@
 
         .card:hover .icon-wrapper {
             background: rgba(255,255,255,0.08);
-            border-color: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.12);
         }
 
         .card-preview .icon-wrapper svg {
             width: 24px;
             height: 24px;
-            color: rgba(255,255,255,0.5);
+            color: rgba(255,255,255,0.45);
         }
 
         .card.folder .icon-wrapper svg {
-            color: #d4a574;
+            color: #c9a66b;
         }
 
         .card-preview .preview-loading {
@@ -204,7 +204,7 @@
             font-family: 'Playfair Display', Georgia, serif;
             font-size: 17px;
             font-weight: 400;
-            color: #fff;
+            color: #e8e8ec;
             margin-bottom: 8px;
             white-space: nowrap;
             overflow: hidden;
@@ -215,7 +215,7 @@
         .card-meta {
             font-size: 12px;
             font-weight: 300;
-            color: rgba(255,255,255,0.35);
+            color: rgba(255,255,255,0.4);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -230,7 +230,7 @@
         }
 
         .card.folder .card-type {
-            color: #d4a574;
+            color: #c9a66b;
         }
 
         .loading-container, .empty-state {
@@ -397,8 +397,16 @@
             files = files.filter(f => !shouldHide(f.name));
 
             if (query) {
-                const q = query.toLowerCase();
-                files = files.filter(f => f.name.toLowerCase().includes(q));
+                const q = query.toLowerCase().replace(/[\s_\-\.]+/g, '');
+                files = files.filter(f => {
+                    const name = f.name.toLowerCase();
+                    const nameNormalized = name.replace(/[\s_\-\.]+/g, '');
+                    // 支持：直接包含、去除分隔符后包含、或者每个词都匹配
+                    const words = query.toLowerCase().split(/[\s_\-\.]+/).filter(Boolean);
+                    return name.includes(query.toLowerCase()) || 
+                           nameNormalized.includes(q) ||
+                           words.every(w => name.includes(w));
+                });
             }
 
             files.sort((a, b) => {
